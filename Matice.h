@@ -8,6 +8,23 @@ typedef struct matice {
     float **data;
 } matice;
 
+enum chyby {
+    BEZ_CHYBY,
+    CHYBA_ALOKACE,
+    CHYBA_OTEVRENI,
+    CHYBA_ZAVRENI,
+    CHYBA_TYPU,
+    CHYBA_JINA
+};
+
+enum operace {
+    PLUS,
+    MINUS,
+    KRAT
+};
+
+extern enum chyby chyba;
+
 matice inicializace(int m, int n);
 matice nulova(int m, int n);
 matice jednotkova(int m, int n);
@@ -25,5 +42,6 @@ int velikost(matice mat, int dimenze);
 float prvek(matice mat, int i, int j);
 void nastav_prvek(matice mat, int i, int j, float hodnota);
 
-bool zkontroluj_matice(matice mat1, matice mat2);
+bool zkontroluj_matice(matice mat1, matice mat2, enum operace mat_oper);
+bool zkontroluj_parametry(matice mat, int i, int j);
 matice proved_operaci(matice mat1, matice mat2, char operator);
