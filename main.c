@@ -58,9 +58,11 @@ int main() {
     zkontroluj_parametry(mat1, 24, 23);
     printf("\n%d", chyba);
 
-    const char *soubor = "/Users/lkral/CLionProjects/xjc/some3.txt";
+    const char *soubor = "/Users/lkral/CLionProjects/xjc/some131233.txt";
 
     matice matx = nacti_ze_souboru(soubor);
+
+    printf("%d", chyba);
     vypis(matx);
     odstran(matx);
 }
