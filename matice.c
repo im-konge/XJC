@@ -260,6 +260,7 @@ matice nacti_ze_souboru(const char *soubor) {
                     if (hodnoty == NULL) {
                         printf("\n[\033[31m\033[1mERROR\033[0m] Chyba pri alokaci promenne pro hodnoty nacitane ze souboru.");
                         chyba = CHYBA_ALOKACE;
+                        return prazdna();
                     }
                 }
             }
@@ -270,7 +271,7 @@ matice nacti_ze_souboru(const char *soubor) {
                     prvni_pruchod = false;
                 } else if (!prvni_pruchod && pocitadlo_n != n) {
                     printf("\n[\033[31m\033[1mERROR\033[0m] Chyba - aktualni pocet zaznamu (%d) na radek matice neodpovida predchozimu (%d).", n, pocitadlo_n);
-                    return nulova(1,1);
+                    return prazdna();
                 }
                 n = 0;
             }
