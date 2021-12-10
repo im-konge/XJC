@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 enum chyby chyba = BEZ_CHYBY;
 
@@ -217,12 +218,74 @@ matice nacti_ze_souboru(const char *soubor) {
         return nulova(1, 1);
     }
 
-    matice mat;
+    int pocitadlo_hodnot = 0, pocitadlo_m = 0, pocitadlo_n = 0, maximalni_pocet_hodnot = 128;
+    char radek[128], *zbytek;
+    float* hodnoty = malloc(maximalni_pocet_hodnot * sizeof(float));
+    bool prvni_pruchod = true;
+
+    if (hodnoty == NULL) {
+        printf("[\033[31m\033[1mERROR\033[0m] Chyba pri alokaci promenne pro hodnoty nacitane ze souboru.");
+        chyba = CHYBA_ALOKACE;
+    }
+
+    while (fgets(radek, sizeof(radek), file)) {
+        zbytek = radek;
+        int n= 0, i = 0;
+        while (zbytek[i] != '\0') {
+            // printf("zbytek: %s", zbytek);
+
+            if (isdigit(zbytek[i])) {
+                i = 0;
+                n++;
+
+                hodnoty[pocitadlo_hodnot++] = strtof(zbytek, &zbytek);
+                if (pocitadlo_hodnot == maximalni_pocet_hodnot - 1) {
+                    maximalni_pocet_hodnot += maximalni_pocet_hodnot;
+                    hodnoty = realloc(hodnoty, maximalni_pocet_hodnot * sizeof(float));
+
+                    if (hodnoty == NULL) {
+                        printf("[\033[31m\033[1mERROR\033[0m] Chyba pri alokaci promenne pro hodnoty nacitane ze souboru.");
+                        chyba = CHYBA_ALOKACE;
+                    }
+                }
+            } else if (zbytek[i] == '\n') {
+                i++;
+                pocitadlo_m++;
+                
+                if (prvni_pruchod) {
+                    pocitadlo_n = n;
+                    prvni_pruchod = false;
+                } else if (!prvni_pruchod && pocitadlo_n != n) {
+                    printf("[\033[31m\033[1mERROR\033[0m] Chyba - aktualni pocet zaznamu (%d) na radek matice neodpovida predchozimu (%d)", n, pocitadlo_n);
+                    return nulova(1,1);
+                }
+            } else if (!isspace(zbytek[i])){
+                zbytek[i] = ' ';
+                i++;
+            } else {
+                i++;
+            }
+        }
+    }
+
+    matice mat = inicializace(pocitadlo_m, pocitadlo_n);
+    int aktualni_m = 0, aktualni_n = 0;
+
+    for (int i = 0; i < pocitadlo_hodnot; i++) {
+        if (aktualni_n == pocitadlo_n) {
+            aktualni_n = 0;
+            aktualni_m++;
+        }
+
+        nastav_prvek(mat, aktualni_m, aktualni_n++, hodnoty[i]);
+    }
 
     if (fclose(file) == EOF) {
         printf("[\033[31m\033[1mERROR\033[0m] Chyba pri zavirani souboru.");
         chyba = CHYBA_ZAVRENI;
     }
+
+    free(hodnoty);
 
     return mat;
 }
@@ -237,11 +300,10 @@ void uloz_do_souboru(matice mat, const char *soubor) {
     }
     
     for (int i = 0; i < mat.m; i++) {
-        fprintf(file, "| ");
         for(int j = 0; j < mat.n; j++) {
             fprintf(file, "%f ", prvek(mat, i, j));
         }
-        fprintf(file, "|\n");
+        fprintf(file, "\n");
     }
 
     fprintf(file, "\n");
