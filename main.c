@@ -1,7 +1,6 @@
-#include "Matice.h"
+#include "matice.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 int main() {
     matice mat1 = jednotkova(3, 4);
@@ -48,8 +47,6 @@ int main() {
     matice t = transpozice(mat1);
     vypis(t);
 
-    printf("INFOOOOOO %f", strtof("ddsadads 56.000000 asdasdasda", NULL));
-
     matice kratpls = krat(mat1, mat2);
     printf("\nmat1:\n");
     vypis(mat1);
@@ -61,12 +58,10 @@ int main() {
     zkontroluj_parametry(mat1, 24, 23);
     printf("\n%d", chyba);
 
-    const char *soubor = "/Users/lkral/CLionProjects/xjc/some.txt";
-
-    printf("\n[\033[32m\033[1mINFO\033[0m] Ctu ze souboru: %s", soubor);
-
+    const char *soubor = "/Users/lkral/CLionProjects/xjc/some3.txt";
 
     matice matx = nacti_ze_souboru(soubor);
     vypis(matx);
+    odstran(matx);
 }
 
