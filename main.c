@@ -62,7 +62,7 @@ int main() {
 
     matice matx = nacti_ze_souboru(soubor);
 
-    printf("%d", chyba);
+    printf("\n%d", chyba);
     vypis(matx);
     odstran(matx);
 }

@@ -6,6 +6,7 @@
 #include <string.h>
 
 enum chyby chyba = BEZ_CHYBY;
+#define BUFFER_SIZE 128
 
 // ##########################################
 // ###          KONTROLNI FUNKCE           ##
@@ -16,7 +17,6 @@ bool zkontroluj_matice(matice mat1, matice mat2, enum operace mat_oper) {
         case PLUS:
         case MINUS:
             if (velikost(mat1, 1) != velikost(mat2, 1) || velikost(mat1, 2) != velikost(mat2, 2)) {
-                printf("\n[\033[31m\033[1mERROR\033[0m] Matice maji odlisne velikosti. Mat1: %d x %d; Mat2: %d x %d.", mat1.m, mat1.n, mat2.m, mat2.n);
                 chyba = CHYBA_TYPU;
                 return false;
             }
@@ -25,7 +25,6 @@ bool zkontroluj_matice(matice mat1, matice mat2, enum operace mat_oper) {
             return true;
         case KRAT:
             if (velikost(mat1, 2) != velikost(mat2, 1)) {
-                printf("\n[\033[31m\033[1mERROR\033[0m] Pocet sloupcu prvni matice se musi rovnat poctu radku druhe. Mat1 ma %d sloupcu, Mat2 ma %d radku.", mat1.n, mat2.m);
                 chyba = CHYBA_TYPU;
                 return false;
             }
@@ -34,7 +33,6 @@ bool zkontroluj_matice(matice mat1, matice mat2, enum operace mat_oper) {
             return true;
         default:
             // pouze v pripade, ze se prida dalsi operace do `enum operace`, pro kterou se neprida kontrola
-            printf("\n[\033[33m\033[1mWARN\033[0m] Neznama operace.");
             chyba = CHYBA_TYPU;
             return false;
     }
@@ -42,7 +40,6 @@ bool zkontroluj_matice(matice mat1, matice mat2, enum operace mat_oper) {
 
 bool zkontroluj_parametry(matice mat, int i, int j) {
     if (velikost(mat, 1) < i || velikost(mat, 2) < j) {
-        printf("\n[\033[31m\033[1mERROR\033[0m] Chyba - matice nema rozmery %d x %d. Rozmery matice: %d x %d.", i, j, mat.m, mat.n);
         chyba = CHYBA_TYPU;
         return false;
     }
@@ -57,30 +54,36 @@ bool zkontroluj_parametry(matice mat, int i, int j) {
 
 matice inicializace(int m, int n) {
     matice init_mat;
-    enum chyby aktualni_chyba = BEZ_CHYBY;
+    chyba = BEZ_CHYBY;
 
     init_mat.m = m;
     init_mat.n = n;
     init_mat.data = malloc(m * sizeof(float*));
 
     if (init_mat.data == NULL) {
-        aktualni_chyba = CHYBA_ALOKACE;
+        chyba = CHYBA_ALOKACE;
+        return prazdna();
     }
 
     for (int i = 0; i < m; i++) {
         init_mat.data[i] = malloc(n * sizeof(float));
         if (init_mat.data[i] == NULL) {
-            aktualni_chyba = CHYBA_ALOKACE;
+            chyba = CHYBA_ALOKACE;
+            odstran(init_mat);
+            return prazdna();
         }
     }
 
-    chyba = aktualni_chyba;
     return init_mat;
 }
 
 matice nulova(int m, int n) {
     matice mat = inicializace(m, n);
     
+    if (chyba == CHYBA_ALOKACE) {
+        return prazdna();
+    }
+
     for (int i = 0; i < m; i++) {
         for(int j = 0; j < n; j++) {
             nastav_prvek(mat, i, j, 0.0);
@@ -93,6 +96,10 @@ matice nulova(int m, int n) {
 matice jednotkova(int m, int n) {
     matice mat = nulova(m, n);
     
+    if (chyba == CHYBA_ALOKACE) {
+        return prazdna();
+    }
+
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
             if (i == j) {
@@ -147,6 +154,10 @@ matice plus(matice mat1, matice mat2) {
     if (zkontroluj_matice(mat1, mat2, PLUS)) {
         matice mat3 = inicializace(velikost(mat1, 1), velikost(mat1, 2));
 
+        if (chyba == CHYBA_ALOKACE) {
+            return prazdna();
+        }
+
         for (int i = 0; i < velikost(mat1, 1); i++) {
             for (int j = 0; j < velikost(mat1, 2); j++) {
                 nastav_prvek(mat3, i, j, prvek(mat1, i, j) + prvek(mat2, i, j));
@@ -163,6 +174,10 @@ matice minus(matice mat1, matice mat2) {
     if (zkontroluj_matice(mat1, mat2, MINUS)) {
         matice mat3 = inicializace(velikost(mat1, 1), velikost(mat1, 2));
 
+        if (chyba == CHYBA_ALOKACE) {
+            return prazdna();
+        }
+
         for (int i = 0; i < velikost(mat1, 1); i++) {
             for (int j = 0; j < velikost(mat1, 2); j++) {
                 nastav_prvek(mat3, i, j, prvek(mat1, i, j) - prvek(mat2, i, j)); 
@@ -178,6 +193,10 @@ matice minus(matice mat1, matice mat2) {
 matice nasobeni(matice mat, float skalar) {
     matice mat2 = inicializace(velikost(mat, 1), velikost(mat, 2));
 
+    if (chyba == CHYBA_ALOKACE) {
+        return prazdna();
+    }
+
     for (int i = 0; i < velikost(mat, 1); i++) {
         for (int j = 0; j < velikost(mat, 2); j++) {
             nastav_prvek(mat2, i, j, prvek(mat, i, j) * skalar); 
@@ -189,6 +208,10 @@ matice nasobeni(matice mat, float skalar) {
 
 matice transpozice(matice mat1) {
     matice t_mat = nulova(velikost(mat1, 2), velikost(mat1, 1));
+
+    if (chyba == CHYBA_ALOKACE) {
+        return prazdna();
+    }
 
     for (int i = 0; i < velikost(mat1, 1); i++) {
         for (int j = 0; j < velikost(mat1, 2); j++) {
@@ -202,6 +225,11 @@ matice transpozice(matice mat1) {
 matice krat(matice mat1, matice mat2) {
     if (zkontroluj_matice(mat1, mat2, KRAT)) {
         matice mat3 = nulova(velikost(mat1, 1), velikost(mat2, 2));
+
+        if (chyba == CHYBA_ALOKACE) {
+            return prazdna();
+        }
+
         for (int i = 0; i < velikost(mat1, 1); i++) {
             for (int j = 0; j < velikost(mat1, 2); j++) {
                 float vysledek = 0.0;
@@ -226,20 +254,19 @@ matice krat(matice mat1, matice mat2) {
 
 matice nacti_ze_souboru(const char *soubor) {
     FILE *file;
+    chyba = BEZ_CHYBY;
 
     if ((file = fopen(soubor, "r")) == NULL) {
-        printf("\n[\033[31m\033[1mERROR\033[0m] Chyba pri otevirani souboru.");
         chyba = CHYBA_OTEVRENI;
         return prazdna();
     }
 
-    int pocitadlo_hodnot = 0, pocitadlo_m = 0, pocitadlo_n = 0, maximalni_pocet_hodnot = 128, n = 0, index = 0;
-    char cislo[128] = {0}, znak;
+    int pocitadlo_hodnot = 0, pocitadlo_m = 0, pocitadlo_n = 0, maximalni_pocet_hodnot = BUFFER_SIZE, n = 0, index = 0;
+    char cislo[BUFFER_SIZE] = {0}, znak;
     float* hodnoty = malloc(maximalni_pocet_hodnot * sizeof(float));
     bool prvni_pruchod = true;
 
     if (hodnoty == NULL) {
-        printf("\n[\033[31m\033[1mERROR\033[0m] Chyba pri alokaci promenne pro hodnoty nacitane ze souboru.");
         chyba = CHYBA_ALOKACE;
         return prazdna();
     }
@@ -252,13 +279,12 @@ matice nacti_ze_souboru(const char *soubor) {
                 hodnoty[pocitadlo_hodnot++] = strtof(cislo, NULL);
                 index = 0;
                 n++;
-                memset(cislo, 0, 128);
+                memset(cislo, 0, BUFFER_SIZE);
                 if (pocitadlo_hodnot == maximalni_pocet_hodnot - 1) {
-                    maximalni_pocet_hodnot += maximalni_pocet_hodnot;
+                    maximalni_pocet_hodnot += BUFFER_SIZE;
                     hodnoty = realloc(hodnoty, maximalni_pocet_hodnot * sizeof(float));
 
                     if (hodnoty == NULL) {
-                        printf("\n[\033[31m\033[1mERROR\033[0m] Chyba pri alokaci promenne pro hodnoty nacitane ze souboru.");
                         chyba = CHYBA_ALOKACE;
                         return prazdna();
                     }
@@ -270,7 +296,6 @@ matice nacti_ze_souboru(const char *soubor) {
                     pocitadlo_n = n;
                     prvni_pruchod = false;
                 } else if (!prvni_pruchod && pocitadlo_n != n) {
-                    printf("\n[\033[31m\033[1mERROR\033[0m] Chyba - aktualni pocet zaznamu (%d) na radek matice neodpovida predchozimu (%d).", n, pocitadlo_n);
                     return prazdna();
                 }
                 n = 0;
@@ -279,6 +304,12 @@ matice nacti_ze_souboru(const char *soubor) {
     }
 
     matice mat = inicializace(pocitadlo_m, pocitadlo_n);
+
+    if (chyba == CHYBA_ALOKACE) {
+        free(hodnoty);
+        return prazdna();
+    }
+
     int aktualni_m = 0, aktualni_n = 0;
 
     for (int i = 0; i < pocitadlo_hodnot; i++) {
@@ -291,7 +322,6 @@ matice nacti_ze_souboru(const char *soubor) {
     }
 
     if (fclose(file) == EOF) {
-        printf("\n[\033[31m\033[1mERROR\033[0m] Chyba pri zavirani souboru.");
         chyba = CHYBA_ZAVRENI;
     }
 
@@ -305,7 +335,6 @@ void uloz_do_souboru(matice mat, const char *soubor) {
     enum chyby aktualni_chyba = BEZ_CHYBY;
 
     if ((file = fopen(soubor, "a+")) == NULL) {
-        printf("\n[\033[31m\033[1mERROR\033[0m] Chyba pri otevirani souboru.");
         aktualni_chyba = CHYBA_OTEVRENI;
     }
     
@@ -319,7 +348,6 @@ void uloz_do_souboru(matice mat, const char *soubor) {
     fprintf(file, "\n");
 
     if (fclose(file) == EOF) {
-        printf("\n[\033[31m\033[1mERROR\033[0m] Chyba pri zavirani souboru.");
         aktualni_chyba = CHYBA_ZAVRENI;
     }
 
@@ -337,7 +365,6 @@ int velikost(matice mat, int dimenze) {
         case 2:
             return mat.n;
         default:
-            printf("\n[\033[31m\033[1mERROR\033[0m] Chyba - dimenze %d neni definovana.", dimenze);
             chyba = CHYBA_JINA;
             return 0;
     }
